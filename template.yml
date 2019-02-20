@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Globals:
+  Function:
+    Environment:
+      Variables:
+        API_TOKEN: steve
+        SONOS_API: http://0.0.0.0:8080
+    Runtime: go1.x
+    Timeout: 300
+    Tracing: Active
+    Handler: main
+
+Resources:
+
+  daily:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./dist/webhook/
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: cron(45 8 * * ? *)
+
+  Webhook:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./dist/webhook/
+      Events:
+        Handshake:
+          Type: Api
+          Properties:
+            Path: '/glo-boards-webhook'
+            Method: Get
+        Subscription:
+          Type: Api
+          Properties:
+            Path: '/glo-boards-webhook'
+            Method: Post
+      Tags:
+        FuncNameTag: !Sub ${AWS::StackName}-Webhook
+      FunctionName: !Sub ${AWS::StackName}-Webhook
+
+Outputs:
+  ApiURL:
+    Description: "API URL"
+    Value: !Sub 'https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
